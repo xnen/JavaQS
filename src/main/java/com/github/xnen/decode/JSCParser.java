@@ -124,7 +124,7 @@ public class JSCParser {
                     fileName = fileName + ".jsc";
                 }
 
-                if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassName())) {
+                if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassNameNoExtension())) {
                     // Start handling new JSC file
                     jscHandler.handle(fileName, true);
                 }
@@ -138,7 +138,7 @@ public class JSCParser {
                 if (!fileName.contains(".")) {
                     fileName = fileName + ".jsc";
                 }
-                if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassName())) {
+                if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassNameNoExtension())) {
                     parsed.addMethodExtension(jscHandler.handle(fileName, false));
                 }
                 continue;

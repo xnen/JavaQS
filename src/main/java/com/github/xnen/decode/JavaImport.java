@@ -14,8 +14,8 @@ public class JavaImport {
     private final String className;
     private String library;
 
-    private List<String> possibleMatches = new ArrayList<>();
-    private List<String> possibleLibraries = new ArrayList<>();
+    private final List<String> possibleMatches = new ArrayList<>();
+    private final List<String> possibleLibraries = new ArrayList<>();
     private int index;
 
 

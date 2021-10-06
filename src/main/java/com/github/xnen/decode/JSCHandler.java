@@ -62,13 +62,13 @@ public class JSCHandler {
 
             if (!targetDir.exists()) {
                 if (!targetDir.mkdirs()) {
-                    System.out.println("Could not create package dirs for jsc " + jscClass.getClassName());
+                    System.out.println("Could not create package dirs for jsc " + jscClass.getClassNameNoExtension());
                     System.exit(-1);
                 }
             }
 
-            try (FileWriter writer = new FileWriter(targetDir.getAbsolutePath() + File.separator + jscClass.getClassName() + ".java")) {
-                List<String> cLines = jscClass.toJavaClass(this);
+            try (FileWriter writer = new FileWriter(targetDir.getAbsolutePath() + File.separator + jscClass.getClassNameNoExtension() + ".java")) {
+                List<String> cLines = jscClass.toJavaClass();
                 for (String line : cLines) {
                     writer.write(applyMacro(jscClass, line) + System.lineSeparator());
                 }
@@ -146,7 +146,7 @@ public class JSCHandler {
             if (jscClass.getPackage() != null) {
                 jscClassPath.append(jscClass.getPackage().replace(".", File.separator)).append(File.separator);
             }
-            jscClassPath.append(jscClass.getClassName()).append(".java");
+            jscClassPath.append(jscClass.getClassNameNoExtension()).append(".java");
             javac_args.add(jscClassPath.toString());
         }
 
@@ -251,9 +251,9 @@ public class JSCHandler {
             String mcName;
 
             if (this.mainJSCObj.getPackage() != null) {
-                mcName = this.mainJSCObj.getPackage() + "." + this.mainJSCObj.getClassName();
+                mcName = this.mainJSCObj.getPackage() + "." + this.mainJSCObj.getClassNameNoExtension();
             } else {
-                mcName = this.mainJSCObj.getClassName();
+                mcName = this.mainJSCObj.getClassNameNoExtension();
             }
 
             FileWriter writer = new FileWriter(tempDir + File.separator + "temp.mf");
@@ -280,22 +280,22 @@ public class JSCHandler {
             String targetPath = "";
 
             if (jscClass.getPackage() != null) {
-                jarArgs.add(jscClass.getPackage().replace(".", File.separator) + File.separator + jscClass.getClassName() + ".class");
+                jarArgs.add(jscClass.getPackage().replace(".", File.separator) + File.separator + jscClass.getClassNameNoExtension() + ".class");
                 targetPath += jscClass.getPackage().replace(".", File.separator) + File.separator;
             } else {
-                jarArgs.add(jscClass.getClassName() + ".class");
+                jarArgs.add(jscClass.getClassNameNoExtension() + ".class");
             }
 
             int i = 0;
-            File file = new File (binFiles.getAbsolutePath() + File.separator + targetPath + jscClass.getClassName() + "$" + i + ".class");
+            File file = new File (binFiles.getAbsolutePath() + File.separator + targetPath + jscClass.getClassNameNoExtension() + "$" + i + ".class");
             while (file.exists() || i < 1) {
                 if (file.exists()) {
                     jarArgs.add("-C");
                     jarArgs.add(binFiles.getAbsolutePath());
-                    jarArgs.add(targetPath + jscClass.getClassName() + "$" + i + ".class");
+                    jarArgs.add(targetPath + jscClass.getClassNameNoExtension() + "$" + i + ".class");
                 }
                 i++;
-                file = new File (binFiles.getAbsolutePath() + File.separator + targetPath + jscClass.getClassName() + "$" + i + ".class");
+                file = new File (binFiles.getAbsolutePath() + File.separator + targetPath + jscClass.getClassNameNoExtension() + "$" + i + ".class");
                 Thread.yield();
             }
         }

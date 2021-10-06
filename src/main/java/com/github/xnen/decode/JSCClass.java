@@ -2,145 +2,114 @@ package com.github.xnen.decode;
 
 import com.github.xnen.App;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author xnen
+ * JSC Class Container, containing all necessary elements to reconstruct the JSC class to a compile-able Java file.
+ */
 public class JSCClass {
-    public void setGenericTypes(String[] genericTypes) {
-        this.genericTypes = genericTypes;
-    }
 
-    public void setExtendingClass(String extendClass) {
-        this.extendClass = extendClass;
-    }
-
-    public void setImplementingClasses(String[] implClasses) {
-        this.implClasses = implClasses;
-    }
-
-    public void addImport(JavaImport javaImport) {
-        this.imports.add(javaImport);
-    }
-
-    public void addStaticImport(String staticImport) {
-        this.staticImports.add(staticImport);
-    }
-
-    public void addMacro(String[] strings) {
-        this.macros.put(strings[0], strings[1]);
-    }
-
-    public String getClassName() {
-        return this.className.substring(0, this.className.lastIndexOf("."));
-    }
-
-    public void addMethodExtension(JSCClass fileName) {
-        this.methodExtensions.add(fileName);
-    }
-
-    public void addClassScope(String line) {
-        this.classScope.add(line);
-    }
-
-    public void addMainScope(String line) {
-        this.mainScope.add(line);
-    }
-
-    public List<JavaImport> getImports() {
-        return this.imports;
-    }
-
-    public String[] getGenericTypes() {
-        return this.genericTypes;
-    }
-
-    public String getExtendingClass() {
-        return this.extendClass;
-    }
-
-    public void setPackage(String classPkg) {
-        this.classPkg = classPkg;
-    }
-
-    public String getPackage() {
-        return this.classPkg;
-    }
-
-    public enum C_MODIFIER {
-        INTERFACE("interface"),
-        ABSTRACT("abstract class"),
-        CLASS("class");
-
-        String name;
-
-        C_MODIFIER(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
-
+    private final Map<String, String> macros = new HashMap<>(App.getInstance().getSettings().globalMacros);
+    private final List<JSCClass> methodExtensions = new ArrayList<>();
+    private final List<String> staticImports = new ArrayList<>();
+    private final List<JavaImport> imports = new ArrayList<>();
+    private final List<String> classScope = new ArrayList<>();
+    private final List<String> mainScope = new ArrayList<>();
     private final String className;
-
-    public JSCClass(String className) {
-        this.className = className;
-    }
-
-    public void setModifier(C_MODIFIER modifier) {
-        this.modifier = modifier;
-    }
-
-    public List<String> getStaticImports() {
-        return staticImports;
-    }
-
-    public Map<String, String> getMacros() {
-        return macros;
-    }
-
-    public List<String> getClassScope() {
-        return classScope;
-    }
-
-    public List<String> getMainScope() {
-        return mainScope;
-    }
-
-    public C_MODIFIER getModifier() {
-        return modifier;
-    }
-
+    private C_MODIFIER modifier = C_MODIFIER.CLASS;
     private String[] genericTypes;
     private String[] implClasses;
     private String extendClass;
     private String classPkg;
 
-    private List<JavaImport> imports = new ArrayList<>();
+    public JSCClass(String className) {
+        this.className = className;
+    }
 
-    private C_MODIFIER modifier = C_MODIFIER.CLASS;
+    public void setImplementingClasses(String[] implClasses) {
+        this.implClasses = implClasses;
+    }
+    public void setExtendingClass(String extendClass) {
+        this.extendClass = extendClass;
+    }
+    public void setGenericTypes(String[] genericTypes) {
+        this.genericTypes = genericTypes;
+    }
+    public void setModifier(C_MODIFIER modifier) {
+        this.modifier = modifier;
+    }
+    public void setPackage(String classPkg) {
+        this.classPkg = classPkg;
+    }
 
-    private List<JSCClass> methodExtensions = new ArrayList<>();
+    public String getClassNameNoExtension() {
+        return this.className.substring(0, this.className.lastIndexOf("."));
+    }
+    public List<String> getStaticImports() {
+        return staticImports;
+    }
+    public String[] getGenericTypes() {
+        return this.genericTypes;
+    }
+    public String getExtendingClass() {
+        return this.extendClass;
+    }
+    public List<JavaImport> getImports() {
+        return this.imports;
+    }
+    public List<String> getClassScope() {
+        return classScope;
+    }
+    public Map<String, String> getMacros() {
+        return macros;
+    }
+    public List<String> getMainScope() {
+        return mainScope;
+    }
+    public C_MODIFIER getModifier() {
+        return modifier;
+    }
+    public String getPackage() {
+        return this.classPkg;
+    }
+    public String getClassName() {
+        return className;
+    }
 
-    private List<String> mainScope = new ArrayList<>();
-    private List<String> classScope = new ArrayList<>();
-    private List<String> staticImports = new ArrayList<>();
+    public void addStaticImport(String staticImport) {
+        this.staticImports.add(staticImport);
+    }
+    public void addMethodExtension(JSCClass fileName) {
+        this.methodExtensions.add(fileName);
+    }
+    public void addMacro(String[] strings) {
+        this.macros.put(strings[0], strings[1]);
+    }
+    public void addImport(JavaImport javaImport) {
+        this.imports.add(javaImport);
+    }
+    public void addClassScope(String line) {
+        this.classScope.add(line);
+    }
+    public void addMainScope(String line) {
+        this.mainScope.add(line);
+    }
 
-    private Map<String, String> macros = new HashMap<>(App.getInstance().getSettings().globalMacros);
-
-    public List<String> toJavaClass(JSCHandler handler) {
+    public List<String> toJavaClass() {
         List<String> javaLines = new ArrayList<>();
 
-        // Method extensions first, then class scope
         if (this.classPkg != null) {
             javaLines.add("package " + this.classPkg + ";");
         }
 
         for (JSCClass ext : this.methodExtensions) {
+            // Must add macros here to translate properly in new class
+            this.macros.putAll(ext.macros);
+
             for (JavaImport javaImport : ext.getImports()) {
                 javaLines.add("import " + javaImport.getCurrentImport() + ";");
             }
@@ -154,7 +123,7 @@ public class JSCClass {
             javaLines.add("import static " + staticImport + ";");
         }
 
-        StringBuilder classLine = new StringBuilder("public " + this.getModifier().getName() + " " + this.getClassName());
+        StringBuilder classLine = new StringBuilder("public " + this.getModifier().getName() + " " + this.getClassNameNoExtension());
         if (this.getGenericTypes() != null && this.getGenericTypes().length > 0) {
             classLine.append("<");
             boolean commaFlag = false;
@@ -197,5 +166,21 @@ public class JSCClass {
         javaLines.add("}");
 
         return javaLines;
+    }
+
+    public enum C_MODIFIER {
+        INTERFACE("interface"),
+        ABSTRACT("abstract class"),
+        CLASS("class");
+
+        String name;
+
+        C_MODIFIER(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
