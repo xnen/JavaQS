@@ -21,13 +21,15 @@ public class JSCHandler {
 
     public JSCHandler(String mainClass) {
         this.mainClass = mainClass;
-        mainJSCObj = handle(this.mainClass);
+        mainJSCObj = handle(this.mainClass, true);
     }
 
-    JSCClass handle(String className) {
+    JSCClass handle(String className, boolean addToList) {
         List<String> lines = JSCFormatter.format(new File(className));
         JSCClass clazz = JSCParser.parse(this, className, lines);
-        this.classList.add(clazz);
+        if (addToList) {
+            this.classList.add(clazz);
+        }
         return clazz;
     }
 
@@ -77,14 +79,41 @@ public class JSCHandler {
     }
 
     private String applyMacro(JSCClass jscClass, String line) {
+        boolean quote = false;
+
         for (String key : jscClass.getMacros().keySet()) {
+            String val = jscClass.getMacros().get(key);
+
             key = key.replace("\\\"", "\"");
             key = key.replace("\\\\", "\\");
-            String val = jscClass.getMacros().get(key);
-            val = val.replace("\\\\", "\\");
-            line = line.replace(key, val);
+
+            char[] chars = line.toCharArray();
+            for (int i = 0; i < chars.length; i++) {
+                char c = chars[i];
+
+                if (c == '"' && (i == 0 || chars[i - 1] != '\\')) {
+                    quote = !quote;
+                }
+
+                if (!quote) {
+                    if (this.charsMatch(chars, key.toCharArray(), i)) {
+                        line = line.substring(0, i) + val + line.substring(i + key.length());
+                    }
+                }
+            }
         }
         return line;
+    }
+
+    boolean charsMatch(char[] c0, char[] c1, int offset) {
+        if (offset + c1.length >= c0.length) return false;
+
+        for (int i = 0; i < c1.length; i++) {
+            if (c1[i] != c0[offset + i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean compileAll(Path tmpDir) {

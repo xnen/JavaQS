@@ -4,8 +4,6 @@ import java.util.List;
 
 public class JSCParser {
     public static JSCClass parse(JSCHandler jscHandler, String className, List<String> lines) {
-        boolean firstLine = true;
-
         JSCClass parsed = new JSCClass(className);
 
         int lineNumber = 0;
@@ -35,35 +33,37 @@ public class JSCParser {
                     offset += "class".length();
                 }
 
-                // Parse GENERIC TYPE CLASS PROPERTIES
-                if (line.charAt(offset) == '<') {
-                    String GT = line.substring(1 + offset, line.indexOf('>'));
-                    parsed.setGenericTypes(GT.split(","));
-                    offset += 2 + GT.length();
-                }
-
-                // Parse EXTENDING CLASS
-                String extendingTrimCompare = line.substring(offset);
-                if (extendingTrimCompare.trim().startsWith("ext ")) {
-                    offset += "ext ".length() + (extendingTrimCompare.length() - extendingTrimCompare.trim().length());
-                    String extLine = line.substring(offset);
-
-                    String extendingClass;
-                    if (extLine.contains(" ")) {
-                        extendingClass = extLine.substring(0, extLine.indexOf(' '));
-                    } else {
-                        extendingClass = extLine;
+                if (offset < line.length()) {
+                    // Parse GENERIC TYPE CLASS PROPERTIES
+                    if (line.charAt(offset) == '<') {
+                        String GT = line.substring(1 + offset, line.indexOf('>'));
+                        parsed.setGenericTypes(GT.split(","));
+                        offset += 2 + GT.length();
                     }
 
-                    parsed.setExtendingClass(extendingClass);
-                    offset += extendingClass.length();
-                }
+                    // Parse EXTENDING CLASS
+                    String extendingTrimCompare = line.substring(offset);
+                    if (extendingTrimCompare.trim().startsWith("ext ")) {
+                        offset += "ext ".length() + (extendingTrimCompare.length() - extendingTrimCompare.trim().length());
+                        String extLine = line.substring(offset);
 
-                // Parse IMPLEMENTING CLASSES
-                String implementsTrimCompare = line.substring(offset);
-                if (implementsTrimCompare.trim().startsWith("impl ")) {
-                    offset += "impl ".length() + (implementsTrimCompare.length() - implementsTrimCompare.trim().length());
-                    parsed.setImplementingClasses(line.substring(offset).split(","));
+                        String extendingClass;
+                        if (extLine.contains(" ")) {
+                            extendingClass = extLine.substring(0, extLine.indexOf(' '));
+                        } else {
+                            extendingClass = extLine;
+                        }
+
+                        parsed.setExtendingClass(extendingClass);
+                        offset += extendingClass.length();
+                    }
+
+                    // Parse IMPLEMENTING CLASSES
+                    String implementsTrimCompare = line.substring(offset);
+                    if (implementsTrimCompare.trim().startsWith("impl ")) {
+                        offset += "impl ".length() + (implementsTrimCompare.length() - implementsTrimCompare.trim().length());
+                        parsed.setImplementingClasses(line.substring(offset).split(","));
+                    }
                 }
 
                 // Continue, since this isn't valid Java code to be parsed.
@@ -108,11 +108,10 @@ public class JSCParser {
 
                 int qId = 0; char pChar = 0;
                 for (char c : line.toCharArray()) {
-                    if (c == '"' && pChar != '\\') qId++;
+                    if (c == '"' && pChar != '\\') { qId++; continue; }
                     if (qId % 2 == 1) resultBuffer[qId / 3] += c;
                     pChar = c;
                 }
-
                 parsed.addMacro(resultBuffer);
                 continue;
             }
@@ -121,9 +120,13 @@ public class JSCParser {
             if (line.startsWith("using ") && line.contains("\"") && line.endsWith(";")) {
                 String usingLine = line.substring("using ".length() + 1);
                 String fileName = usingLine.substring(0, usingLine.lastIndexOf("\""));
+                if (!fileName.contains(".")) {
+                    fileName = fileName + ".jsc";
+                }
+
                 if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassName())) {
                     // Start handling new JSC file
-                    jscHandler.handle(fileName);
+                    jscHandler.handle(fileName, true);
                 }
                 continue;
             }
@@ -132,8 +135,11 @@ public class JSCParser {
             if (line.startsWith("ext ") && line.contains("\"") && line.endsWith(";")) {
                 String extLine = line.substring("ext ".length() + 1);
                 String fileName = extLine.substring(0, extLine.lastIndexOf("\""));
+                if (!fileName.contains(".")) {
+                    fileName = fileName + ".jsc";
+                }
                 if (!fileName.substring(0, fileName.lastIndexOf(".")).equalsIgnoreCase(parsed.getClassName())) {
-                    parsed.addMethodExtension(fileName);
+                    parsed.addMethodExtension(jscHandler.handle(fileName, false));
                 }
                 continue;
             }
@@ -163,6 +169,7 @@ public class JSCParser {
 
         return s.trim().startsWith("@");
     }
+
 
     static final String[] class_scope_identifiers = {
             "abstract"

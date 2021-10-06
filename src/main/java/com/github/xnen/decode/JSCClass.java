@@ -37,7 +37,7 @@ public class JSCClass {
         return this.className.substring(0, this.className.lastIndexOf("."));
     }
 
-    public void addMethodExtension(String fileName) {
+    public void addMethodExtension(JSCClass fileName) {
         this.methodExtensions.add(fileName);
     }
 
@@ -83,7 +83,7 @@ public class JSCClass {
         public String getName() {
             return name;
         }
-    };
+    }
 
     private final String className;
 
@@ -124,7 +124,7 @@ public class JSCClass {
 
     private C_MODIFIER modifier = C_MODIFIER.CLASS;
 
-    private List<String> methodExtensions = new ArrayList<>();
+    private List<JSCClass> methodExtensions = new ArrayList<>();
 
     private List<String> mainScope = new ArrayList<>();
     private List<String> classScope = new ArrayList<>();
@@ -134,26 +134,13 @@ public class JSCClass {
 
     public List<String> toJavaClass(JSCHandler handler) {
         List<String> javaLines = new ArrayList<>();
-        List<JSCClass> extensions = new ArrayList<>();
 
         // Method extensions first, then class scope
-        for (String fileName : this.methodExtensions) {
-            File file = new File(fileName);
-            if (file.exists()) {
-                List<String> lines = JSCFormatter.format(new File(fileName));
-                JSCClass clazz = JSCParser.parse(handler, file.getName(), lines);
-                extensions.add(clazz);
-            } else {
-                System.out.println("Error: No extension found by name " + fileName + ".");
-                System.exit(-1);
-            }
-        }
-
         if (this.classPkg != null) {
             javaLines.add("package " + this.classPkg + ";");
         }
 
-        for (JSCClass ext : extensions) {
+        for (JSCClass ext : this.methodExtensions) {
             for (JavaImport javaImport : ext.getImports()) {
                 javaLines.add("import " + javaImport.getCurrentImport() + ";");
             }
@@ -196,11 +183,13 @@ public class JSCClass {
         classLine.append(" {");
         javaLines.add(classLine.toString());
 
-        javaLines.add("public static void main(String[] args) {");
-        javaLines.addAll(this.mainScope);
-        javaLines.add("}");
+        if (this.getModifier() != C_MODIFIER.INTERFACE) {
+            javaLines.add("public static void main(String[] args) {");
+            javaLines.addAll(this.mainScope);
+            javaLines.add("}");
+        }
 
-        for (JSCClass ext : extensions) {
+        for (JSCClass ext : this.methodExtensions) {
             javaLines.addAll(ext.classScope);
         }
 

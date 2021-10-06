@@ -80,12 +80,14 @@ public class JavaImport {
                     wc = true;
                 }
 
+                if (!name.startsWith(File.separator)) {
+                    name = File.separator + name;
+                }
+
+
                 if (wc) {
                     if (entryName.contains(name)) {
-                        String formatted = entryName.substring(0, entryName.indexOf(name) + name.length()).replace(File.separator, ".");
-                        if (wc) {
-                            formatted += "*";
-                        }
+                        String formatted = entryName.substring(0, entryName.indexOf(name) + name.length()).replace(File.separator, ".") + "*";
 
                         if (!this.possibleMatches.contains(formatted)) {
                             this.possibleMatches.add(formatted);
